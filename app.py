@@ -3,24 +3,20 @@ import os
 
 app = Flask(__name__)
 
-# Verileri tutan değişken
+# Global değişken
 ev_verileri = {"sicaklik": 0, "nem": 0, "basinc": 0}
 
-@app.route('/')
-def home():
-    return "Ev Otomasyonu Sunucusu Aktif!"
-
-# Sadece POST değil, tüm yöntemleri kabul etsin ki 405 almayalım
-@app.route('/guncelle', methods=['POST', 'GET', 'PUT'])
+@app.route('/guncelle', methods=['POST'])
 def guncelle():
-    # Veri gelmediğinde hata almamak için force=True ekledik
-    data = request.get_json(force=True) 
+    global ev_verileri  # BU SATIR EN ÖNEMLİSİ!
+    data = request.get_json(force=True)
     if data:
         ev_verileri["sicaklik"] = data.get("sicaklik", 0)
         ev_verileri["nem"] = data.get("nem", 0)
         ev_verileri["basinc"] = data.get("basinc", 0)
-        return jsonify({"mesaj": "Veriler alindi"}), 200
-    return jsonify({"hata": "Veri yok"}), 400
+        print(f"Guncellendi: {ev_verileri}") # Loglarda bunu görmelisin
+        return jsonify({"mesaj": "OK"}), 200
+    return jsonify({"mesaj": "Veri yok"}), 400
 
 @app.route('/durum', methods=['GET'])
 def durum():
