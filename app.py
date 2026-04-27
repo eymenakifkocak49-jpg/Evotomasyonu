@@ -8,24 +8,25 @@ ev_verileri = {"sicaklik": 0, "nem": 0, "basinc": 0}
 
 @app.route('/')
 def home():
-    return "Ev Otomasyonu Sunucusu Aktif! Sistem çalışıyor."
+    return "Ev Otomasyonu Sunucusu Aktif!"
 
-@app.route('/guncelle', methods=['POST'])
+# Sadece POST değil, tüm yöntemleri kabul etsin ki 405 almayalım
+@app.route('/guncelle', methods=['POST', 'GET', 'PUT'])
 def guncelle():
-    data = request.get_json() # 'request.json' yerine bu daha garantidir
+    # Veri gelmediğinde hata almamak için force=True ekledik
+    data = request.get_json(force=True) 
     if data:
         ev_verileri["sicaklik"] = data.get("sicaklik", 0)
         ev_verileri["nem"] = data.get("nem", 0)
         ev_verileri["basinc"] = data.get("basinc", 0)
         return jsonify({"mesaj": "Veriler alindi"}), 200
-    return jsonify({"hata": "Veri gonderilmedi"}), 400
+    return jsonify({"hata": "Veri yok"}), 400
 
 @app.route('/durum', methods=['GET'])
 def durum():
     return jsonify(ev_verileri)
 
 if __name__ == '__main__':
-    # Burası lokal test için iyidir, Render'da Gunicorn zaten bunu yönetir
-    port = int(os.environ.get("PORT", 10000)) 
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
     
