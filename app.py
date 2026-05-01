@@ -1,10 +1,9 @@
-from flask import Flask, jsonify, request
-from flask_socketio import SocketIO
+from flask import Flask, jsonify, request, Response, stream_with_context
 import os
 import json
+import time
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
 
 VERI_DOSYASI = "/tmp/ev_verileri.json"
 
@@ -43,16 +42,24 @@ def guncelle():
         mevcut_veri["nem"] = data.get("nem", 0)
         mevcut_veri["basinc"] = data.get("basinc", 0)
         if veri_yaz(mevcut_veri):
-            socketio.emit('veri', mevcut_veri)
             return jsonify({"durum": "basarili"}), 200
         else:
             return jsonify({"hata": "Dosyaya yazılamadı"}), 500
     return jsonify({"hata": "Veri yok"}), 400
 
-@socketio.on('connect')
-def connect():
-    socketio.emit('veri', veri_oku())
+@app.route('/stream')
+def stream():
+    def generate():
+        son_veri = None
+        while True:
+            veri = veri_oku()
+            if veri != son_veri:
+                son_veri = veri
+                yield f"data: {json.dumps(veri)}\n\n"
+            time.sleep(1)
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
-    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
+    app.run(host='0.0.0.0', port=port)
+
